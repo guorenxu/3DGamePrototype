@@ -1,0 +1,58 @@
+uniform extern matrix ViewMatrix;
+uniform extern matrix Proj;
+
+vector Black = {0.0f, 0.0f, 0.0f, 0.0f};
+
+struct VS_INPUT
+{
+    vector position    : POSITION;
+    vector normal      : NORMAL0;
+    vector faceNormal1 : NORMAL1; 
+    vector faceNormal2 : NORMAL2;
+};
+
+struct VS_OUTPUT
+{
+    vector position : POSITION;
+    vector diffuse  : COLOR;
+};
+
+VS_OUTPUT Main(VS_INPUT input)
+{
+    VS_OUTPUT output = (VS_OUTPUT)0;
+
+    input.position = mul(input.position, ViewMatrix);
+
+    vector eyeToVertex = input.position;
+
+    input.normal.w      = 0.0f;
+    input.faceNormal1.w = 0.0f;
+    input.faceNormal2.w = 0.0f;
+
+    input.normal      = mul(input.normal,      ViewMatrix);
+    input.faceNormal1 = mul(input.faceNormal1, ViewMatrix);
+    input.faceNormal2 = mul(input.faceNormal2, ViewMatrix);
+
+    float dot0 = dot(eyeToVertex, input.faceNormal1);
+    float dot1 = dot(eyeToVertex, input.faceNormal2);
+
+    if( (dot0 * dot1) < 0.0f )
+    {
+         input.position += 0.3f * input.normal;
+    }
+
+    output.position = mul(input.position, Proj);
+
+    output.diffuse = Black;
+    
+    return output;
+}
+
+technique Outline
+{
+	pass P0
+	{
+		vertexShader = compile vs_2_0 Main();
+		pixelShader = null;
+	}
+}

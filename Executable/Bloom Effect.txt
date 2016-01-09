@@ -1,0 +1,178 @@
+uniform extern texture GameColor;
+uniform extern texture BloomColor;
+
+float3 factorsqrt = float3(0.4909f, 0.8313f, 0.2607f); 
+
+sampler SourceSampler = sampler_state
+{
+      Texture = <GameColor>;
+      MinFilter = LINEAR;
+      MagFilter = LINEAR;
+      MipFilter = None;
+      AddressU  = CLAMP;
+      AddressV  = CLAMP;
+};
+
+sampler BloomSampler = sampler_state
+{
+      Texture = <BloomColor>;
+      MinFilter = LINEAR;
+      MagFilter = LINEAR;
+      MipFilter = None;
+      AddressU  = CLAMP;
+      AddressV  = CLAMP;
+};
+
+struct PS_INPUT
+{
+    float2 texcoord : TEXCOORD;
+};
+
+struct PS_OUTPUT
+{
+    vector color  : COLOR;
+};
+
+PS_OUTPUT Bloom(PS_INPUT input)
+{
+    PS_OUTPUT output = (PS_OUTPUT)0;
+    
+    output.color = tex2D(SourceSampler, input.texcoord.xy);
+    vector rgb = output.color;
+    
+    float3 m = rgb * factorsqrt; 
+    float brightness = dot(m, m); 
+    
+    float brightness_bloom = saturate(brightness - 0.9f);
+    
+    output.color = ((brightness_bloom / brightness) * output.color) * 8;
+       
+    return output;
+}
+
+PS_OUTPUT Blur_Horizontal(PS_INPUT input)
+{
+    PS_OUTPUT output = (PS_OUTPUT)0;
+    
+    output.color = tex2D(SourceSampler, input.texcoord.xy);
+    vector rgb = output.color;
+     
+    float3 m = rgb * factorsqrt; 
+    float brightness = dot(m, m); 
+    
+    float2 offsets[8];
+    
+    offsets[0] = float2(0.006f, 0);
+    offsets[1] = float2(-0.005f, 0);
+    offsets[2] = float2(0.009f, 0);
+    offsets[3] = float2(-0.008f, 0);
+    offsets[4] = float2(0.014f, 0);
+    offsets[5] = float2(-0.012f, 0);
+    offsets[6] = float2(0.019f, 0);
+    offsets[7] = float2(-0.016f, 0);						
+    
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[0]) * 1.0f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[1]) * 1.0f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[2]) * 0.8f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[3]) * 0.8f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[4]) * 0.7f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[5]) * 0.7f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[6]) * 0.5f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[7]) * 0.5f;
+    
+    output.color = output.color / 6.0f;
+     
+    if(dot(float3(0.241f, 0.691f, 0.068f), output.color * output.color) < 
+    dot(float3(0.241f, 0.691f, 0.068f), rgb * rgb)) 
+    {
+		output.color = rgb;
+	}
+
+    return output;
+}
+
+PS_OUTPUT Blur_Vertical(PS_INPUT input)
+{
+    PS_OUTPUT output = (PS_OUTPUT)0;
+    
+    output.color = tex2D(SourceSampler, input.texcoord.xy);
+    vector rgb = output.color;
+    
+    float3 m = rgb * factorsqrt; 
+    float brightness = dot(m, m); 
+    
+    float2 offsets[8];
+    
+    offsets[0] = float2(0, 0.006f);
+    offsets[1] = float2(0, -0.005f);
+    offsets[2] = float2(0, 0.009f);
+    offsets[3] = float2(0, -0.008f);
+    offsets[4] = float2(0, 0.014f);
+    offsets[5] = float2(0, -0.012f);
+    offsets[6] = float2(0, 0.019f);
+    offsets[7] = float2(0, -0.016f);						
+    
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[0]) * 1.0f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[1]) * 1.0f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[2]) * 0.8f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[3]) * 0.8f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[4]) * 0.7f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[5]) * 0.7f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[6]) * 0.5f;
+    output.color += tex2D(SourceSampler, input.texcoord.xy + offsets[7]) * 0.5f;
+    
+    output.color = output.color / 6.0f;
+     
+    if(dot(float3(0.241f, 0.691f, 0.068f), output.color * output.color) < 
+    dot(float3(0.241f, 0.691f, 0.068f), rgb * rgb))
+    {
+		output.color = rgb;
+	}
+
+    return output;
+}
+
+PS_OUTPUT Mix(PS_INPUT input)
+{
+    PS_OUTPUT output = (PS_OUTPUT)0;
+    
+    //output.color = (tex2D(BloomSampler, input.texcoord.xy)
+    //+ tex2D(SourceSampler, input.texcoord.xy)) / 1.1f;
+    
+    //vector bloomcolor = tex2D(BloomSampler, input.texcoord.xy);
+    vector gamecolor = tex2D(SourceSampler, input.texcoord.xy);
+    
+    //output.color = (gamecolor + bloomcolor) / 1.3f;
+   
+    //output.color = bloomcolor;
+	output.color = gamecolor;
+	
+    return output;
+}
+
+technique Bloom_Effect
+{
+    pass P0
+    {
+        VertexShader = null;
+        PixelShader = compile ps_2_0 Bloom();
+    }
+    
+    pass P1
+    {
+        VertexShader = null;
+        PixelShader = compile ps_2_0 Blur_Horizontal();
+    }
+    
+    pass P2
+    {
+        VertexShader = null;
+        PixelShader = compile ps_2_0 Blur_Vertical();
+    }
+       
+    pass P3
+    {
+        VertexShader = null;
+        PixelShader = compile ps_2_0 Mix();
+    }		
+}

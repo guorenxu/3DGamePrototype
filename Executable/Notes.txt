@@ -1,0 +1,41 @@
+Optimization : 
+
+Shaders don't have extra variables.
+Create as little variables as you can.
+
+Heightmap Shader uses one color channel for each texture alpha
+
+Optimize Meshes
+
+If needed, write distance algorithm for picking
+
+Normalize all normals
+
+Remember to recheck mouse algorithms! Problems were found when it was 2D tested!
+
+
+
+
+7/22 - Continued to work on cell shading engine. The problem with the cell shading engine occurred 
+because of linear filtration. With point filtration, the problem is completely mitigated. 
+Improved naming of variables in shaders and placed GetTechniques in Effects class function.
+(2 Hours)
+
+7/23 - Cleaned sloppy rendering codes. Calibrated cell texture slightly. Encountered bloom shader problem;
+Bloom doesn't look well with cell shading. Reordered draw order so bloom doesn't affect cell shaded objects.
+Encountered problem with new order. Bloom will overlap if not occupied beforehand. Created new shader
+pass in the cell shader to prevent glitch. Began work on outline engine. Found out that FVFs were old and
+deprecated and unflexible. Learned about vertex declarations.
+(3 Hours)
+
+7/24 - Continued work on outline engine.
+(2 Hours)
+
+7/26 - Continued work on outline engine. Began first runtime tests. Tests failed. Frames were one frame behind.
+Fixed problem by adding a CommitChanges function call. Fixed mouse offsets according to 2D program experiences.
+
+(3 Hours)
+
+REMEMBER TO TEST SCALING!!!!\
+
+REMEMBER TO CREATE A MOVING SKY

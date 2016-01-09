@@ -1,0 +1,151 @@
+uniform extern matrix ViewProj;
+uniform extern matrix ViewMatrix;
+uniform extern matrix ViewProjMatrix;
+
+uniform extern vector AmbientMtrl;
+uniform extern vector DiffuseMtrl;
+
+uniform extern vector LightDirection;
+
+uniform extern vector DiffuseIntensity;
+uniform extern vector AmbientIntensity;
+
+uniform extern texture Tex;
+
+uniform extern vector CameraPosition;
+
+uniform extern bool FogOn;
+
+float3 factorsqrt = float3(0.4909f, 0.8313f, 0.2607f);
+
+float3 FogColor = {0.53125f, 0.8046875f, 0.9140625f};
+float  FogStart = 500.0f;
+float  FogRange = 800.0f;
+
+sampler TexColor = sampler_state
+{
+      Texture = <Tex>;
+      MinFilter = LINEAR;
+      MagFilter = LINEAR;
+      MipFilter = LINEAR;
+      AddressU  = WRAP;
+      AddressV  = WRAP;
+};
+
+struct VS_OUTPUT
+{
+    vector position : POSITION;
+    vector diffuse  : COLOR;
+    
+    float2 texcoord   : TEXCOORD0;
+    float2 fog		: TEXCOORD1;
+};
+
+VS_OUTPUT Lighting_VS(    
+	vector position : POSITION,
+    vector normal   : NORMAL,
+    float2 texcoord   : TEXCOORD0)
+{
+	vector LD = LightDirection;
+	vector AM = AmbientMtrl;
+	vector DM = DiffuseMtrl;
+	
+	matrix VP = ViewProj;
+	matrix VM = ViewMatrix;
+	matrix VPM = ViewProjMatrix;
+
+    VS_OUTPUT output = (VS_OUTPUT)0;
+
+    output.position = mul(position, VPM);
+    vector posw = mul(position, VM);
+
+    LD.w = 0.0f;
+    normal.w = 0.0f;
+    normal = mul(normal, VPM);
+    
+    float4 L = normalize(mul(LD, VP));
+	float4 N = normalize(normal);
+
+    float s = dot(L, N);
+    //float s = saturate(max(0.0f, dot(normal, LD)));
+    
+    if (s < 0.0f)
+    {
+		s = 0.0f;
+	}
+    
+    output.diffuse = (AM * AmbientIntensity) +
+                     (s * (DiffuseIntensity * DM));
+    
+    float dist = distance(posw, CameraPosition);
+    output.fog = saturate((dist - FogStart) / FogRange);
+
+	output.texcoord = texcoord;
+    
+    return output;
+}
+
+
+struct PS_INPUT
+{
+	vector color	:	COLOR0;
+
+    float2 texcoord	:	TEXCOORD0;
+    float2 fog		:	TEXCOORD1;
+};
+
+struct PS_OUTPUT
+{
+    vector color : COLOR0;
+};
+
+PS_OUTPUT Texturing_PS(PS_INPUT input)
+{
+    PS_OUTPUT output = (PS_OUTPUT)0;
+    
+    vector light = input.color;
+    
+    vector final;
+    
+    vector black = {0, 0, 0, 0};
+    vector one = {1, 1, 1, 0};
+    
+    light = one - light;
+    
+    vector r1 = tex2D(TexColor, input.texcoord);
+    
+    final = lerp(r1, black, light.x);
+
+    vector c = final;
+    
+    //c = c * 1.3f;
+    
+    if (FogOn == true)
+    {
+		vector vfogcolor = {FogColor.x, FogColor.y, FogColor.z, 0};
+		c = lerp(c, vfogcolor, input.fog.x);
+	}
+   
+    output.color = c;
+
+    return output;
+}
+
+technique Lighting_Tech_Simple
+{
+	pass P0
+	{
+		ZEnable = TRUE;
+	
+		vertexShader = compile vs_2_0 Lighting_VS();
+		pixelShader = compile ps_2_0 Texturing_PS();
+	}
+	
+	pass P1
+	{
+		ZEnable = FALSE;
+	
+		vertexShader = compile vs_2_0 Lighting_VS();
+		pixelShader = compile ps_2_0 Texturing_PS();
+	}
+}

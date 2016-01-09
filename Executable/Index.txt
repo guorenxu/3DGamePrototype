@@ -1,0 +1,32 @@
+Stonehenge
+--------
+
+Subsets			:	1
+
+Vertices		:	164
+Normals			:	165
+Texcoords		:	246
+Faces			:	326
+Texture Name	:	Stonehenge.bmp
+
+Skydome
+--------
+
+Subsets			:	1
+
+Vertices		:	129
+Normals			:	129
+Texcoords		:	129
+Faces			:	224
+Texture Name	:	Skydome.bmp
+
+Skydome Bottom
+--------
+
+Subsets			:	1
+
+Vertices		:	129
+Normals			:	129
+Texcoords		:	129
+Faces			:	224
+Texture Name	:	Skydome.bmp

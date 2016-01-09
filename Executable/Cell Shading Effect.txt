@@ -1,0 +1,149 @@
+uniform extern matrix ViewProj;
+uniform extern matrix ViewMatrix;
+uniform extern matrix ViewProjMatrix;
+
+uniform extern vector LightDirection;
+
+uniform extern texture Tex;
+
+uniform extern vector CameraPosition;
+
+uniform extern bool FogOn;
+
+float3 FogColor = {0.784f, 0.859f, 0.886f};
+float  FogStart = 600.0f;
+float  FogRange = 900.0f;
+
+sampler TexColor = sampler_state
+{
+      Texture = <Tex>;
+      MinFilter = POINT;
+      MagFilter = POINT;
+      MipFilter = NONE;
+      AddressU  = WRAP;
+      AddressV  = WRAP;
+};
+
+struct VS_OUTPUT_CELL
+{
+    vector position : POSITION;
+    
+    float2 texcoord   : TEXCOORD0;
+    float2 fog		: TEXCOORD1;
+};
+
+struct VS_OUTPUT_OCCUPY
+{
+    vector position : POSITION;
+};
+
+VS_OUTPUT_CELL Cell_VS(    
+	vector position : POSITION,
+    vector normal   : NORMAL,
+    float2 texcoord   : TEXCOORD0)
+{
+	vector LD = LightDirection;
+	
+	matrix VP = ViewProj;
+	matrix VM = ViewMatrix;
+	matrix VPM = ViewProjMatrix;
+
+    VS_OUTPUT_CELL output = (VS_OUTPUT_CELL)0;
+
+    output.position = mul(position, VPM);
+    vector posw = mul(position, VM);
+
+    LD.w = 0.0f;
+    normal.w = 0.0f;
+    normal = mul(normal, VPM);
+    
+    float4 L = normalize(mul(LD, VP));
+	float4 N = normalize(normal);
+
+    float s = dot(L, N);
+    //float s = saturate(max(0.0f, dot(normal, LD)));
+    
+    if (s < 0.0f)
+    {
+		s = 0.0f;
+	}
+                     
+    output.texcoord.x = s;
+    output.texcoord.y = 0.5f;
+    
+    float dist = distance(posw, CameraPosition);
+    output.fog = saturate((dist - FogStart) / FogRange);
+    
+    return output;
+}
+
+VS_OUTPUT_OCCUPY Occupy_VS(
+	vector position : POSITION)
+{
+	matrix VPM = ViewProjMatrix;
+
+    VS_OUTPUT_OCCUPY output = (VS_OUTPUT_OCCUPY)0;
+
+    output.position = mul(position, VPM);           
+
+    return output;
+}
+
+struct PS_INPUT_CELL
+{
+    float2 texcoord	:	TEXCOORD0;
+    float2 fog		:	TEXCOORD1;
+};
+
+struct PS_OUTPUT_CELL
+{
+    vector color : COLOR0;
+};
+
+struct PS_OUTPUT_OCCUPY
+{
+    vector color : COLOR0;
+};
+
+PS_OUTPUT_CELL Cell_PS(PS_INPUT_CELL input)
+{
+    PS_OUTPUT_CELL output = (PS_OUTPUT_CELL)0;
+
+    vector color = tex2D(TexColor, input.texcoord);
+    
+    if (FogOn == true)
+    {
+		vector vfogcolor = {FogColor.x, FogColor.y, FogColor.z, 0};
+		color = lerp(color, vfogcolor, input.fog.x);
+	}
+   
+    output.color = color;
+
+    return output;
+}
+
+PS_OUTPUT_OCCUPY Occupy_PS()
+{
+    PS_OUTPUT_OCCUPY output = (PS_OUTPUT_OCCUPY)0;
+
+    vector color = {0, 0, 0, 0};
+
+    output.color = color;
+
+    return output;
+}
+
+technique Cell_Tech
+{
+	pass P0
+	{
+		vertexShader = compile vs_2_0 Occupy_VS();
+		pixelShader = compile ps_2_0 Occupy_PS();
+	}
+
+	pass P1
+	{
+		vertexShader = compile vs_2_0 Cell_VS();
+		pixelShader = compile ps_2_0 Cell_PS();
+	}
+}
